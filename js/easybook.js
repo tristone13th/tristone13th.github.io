@@ -282,11 +282,11 @@ function RealLoad() {
 
     // 此部分用来支持数学公式的转化，原来的部分带if用来判断文档中是否有数学公式，但是若只存在行内公式的话则不会加载，遂予以删除
     // if (document.querySelector('script[type*="math/tex"]'))
-    var sc = document.createElement('script');
-    sc.setAttribute('type', 'text/javascript');
-    sc.setAttribute('async', 'true');
-    sc.setAttribute('src', 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js');
-    document.body.appendChild(sc);
+    // var sc = document.createElement('script');
+    // sc.setAttribute('type', 'text/javascript');
+    // sc.setAttribute('async', 'true');
+    // sc.setAttribute('src', 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js');
+    // document.body.appendChild(sc);
 }
 
 RealLoad();
