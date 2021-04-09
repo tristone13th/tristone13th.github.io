@@ -64,9 +64,18 @@
             margin-left: auto;
             margin-right: auto
         }
+
+        .footnote:before {
+            content: '[';
+        }
+        
+        .footnote:after {
+            content: ']';
+        }
     }
 
     .post-comments {
         padding-top: 30px;
     }
+
 }

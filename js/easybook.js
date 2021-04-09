@@ -177,7 +177,6 @@ function TOCize(toc, content, matchHeightTo) {
 }
 
 
-
 // 处理和Sidebar相关的函数与过程，Palm表示手掌、使用移动设备
 function PalmSidebar() {
     var ww = 0; // window width
@@ -259,6 +258,7 @@ function SelectAllize(selector, tips) {
 
     return true;
 }
+
 
 function RealLoad() {
     TOCize(
