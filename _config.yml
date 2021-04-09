@@ -40,7 +40,7 @@ paginate: 5
 paginate_path: "page:num"
 
 highlighter: rouge
-markdown: CommonMarkGhPages
+markdown: kramdown
 
 # https://jekyllrb.com/docs/configuration/#precedence
 defaults:
@@ -51,6 +51,6 @@ defaults:
     values:
       layout: "post"
 
-commonmark:
-  options: ["SMART", "FOOTNOTES"]
-  extensions: ["strikethrough", "autolink", "table", "tagfilter"]
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
