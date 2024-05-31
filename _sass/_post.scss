@@ -1,0 +1,113 @@
+.post {
+    .post-header {
+        margin: 0 100px;
+        margin-bottom: 40px;
+        padding: 20px;
+
+        .post-title {
+            font-size: 40px;
+            font-weight: normal;
+            margin: 0 -100px;
+            color: #ee8241;
+
+            @include media-query($on-palm) {
+                font-size: 34px;
+            }
+        }
+
+        .post-meta {
+            color: #999;
+            font-size: $small-font-size;
+            margin: 0 -100px;
+
+            a {
+                color: #9cdcfe;
+            }
+        }
+
+        @include media-query($on-palm) {
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+    }
+
+    .post-content {
+        color: #eeffff;
+
+        h1,
+        h4,
+        h5,
+        h6 {
+            color: #eeffff;
+
+            >code {
+                color: $theme;
+            }
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            margin-top: 30px;
+
+            >code {
+                color: $theme;
+            }
+        }
+
+        h3 {
+            font-size: $base-font-size;
+            color: $theme;
+
+            >code {
+                color: $theme;
+            }
+        }
+
+        h2 {
+            font-size: $base-font-size;
+            color: $theme;
+            border-bottom: 2px solid $theme;
+
+            >code {
+                color: $theme;
+            }
+        }
+
+        pre {
+            margin: 0 -30px;
+
+            @include media-query($on-palm) {
+                margin: 0 -10px;
+            }
+        }
+
+        a {
+            color: #888888;
+        }
+
+        strong {
+            color: #9cdcfe;
+        }
+
+        .middle-image {
+            display: block;
+            margin-left: auto;
+            margin-right: auto
+        }
+
+        .footnote:before {
+            content: '[';
+        }
+
+        .footnote:after {
+            content: ']';
+        }
+    }
+
+    .post-comments {
+        padding-top: 30px;
+    }
+
+}

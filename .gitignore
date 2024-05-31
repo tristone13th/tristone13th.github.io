@@ -1,0 +1,40 @@
+# ignore everything
+/*
+/*/
+/.obsidian/workspace.json
+/img/Template.excalidraw.png
+/img/Template.excalidraw.svg
+
+# but not those folders
+!/.github/
+!/_includes/
+!/_layouts/
+!/_posts/
+!/_sass/
+!/.devcontainer/
+!/.vscode/
+!/css/
+!/img/
+!/js/
+!/.obsidian/
+
+# and not these files
+!_config.yml
+!.gitattributes
+!.gitignore
+!.travis.yml
+!404.md
+!about.md
+!category.md
+!feed.xml
+!Gemfile
+!index.html
+!LICENSE
+!locally-run.cmd
+!mindmap.html
+!netlify.toml
+!README.md
+!serve
+!sitemap.xml
+!docker-compose.yml
+!favicon.ico

@@ -1,0 +1,9 @@
+{
+    "version": "2.0.0",
+    "tasks": [{
+        "label": "serve",
+        "command": "bundle install && jekyll serve", // Could be any other shell command
+        "type": "shell",
+        // "runOptions": { "runOn": "folderOpen" }
+    }]
+}

@@ -1,0 +1,30 @@
+{
+  "menuCommands": [
+    {
+      "id": "open-with-default-app:show",
+      "name": "在系统资源管理器中显示",
+      "icon": "lucide-files"
+    },
+    {
+      "id": "editor:toggle-highlight",
+      "name": "高亮/取消高亮",
+      "icon": "lucide-highlighter"
+    },
+    {
+      "id": "editor:set-heading-1",
+      "name": "Set as heading 1",
+      "icon": "heading-glyph"
+    },
+    {
+      "id": "editor:set-heading-2",
+      "name": "Set as heading 2",
+      "icon": "heading-glyph"
+    },
+    {
+      "id": "editor:set-heading-3",
+      "name": "Set as heading 3",
+      "icon": "heading-glyph"
+    }
+  ],
+  "hideTitles": []
+}

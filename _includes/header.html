@@ -1,0 +1,22 @@
+<div class="header-placeholder"></div>
+<header class="header">
+  <div class="wrapper">
+
+    <div id="sidebar-toggle">TOC</div>
+
+    <nav style="display: inline;">
+      <a class="site-title" href="{{ site.baseurl }}/">{{site.title}}</a>
+    </nav>
+
+    <nav class="site-nav">
+      <a id="show-map" style="display: none;cursor: pointer;">Mindmap</a>
+      {% for link in site.header.links %}{% assign url = link[1] %}
+      {% assign urlchk = url | split: "/" %}{% if urlchk[0] == '' and urlchk[1] != '' %}{% assign uprefix =
+      site.baseurl %}{% else %}{% assign uprefix = ''%}{% endif %}
+      <a href="{{ url | prepend: uprefix }}">{{ link[0] }}</a>
+      {% endfor %}
+      <!-- <a href="https://blogsearch.netlify.app" target="_blank">Search</a> -->
+    </nav>
+
+  </div>
+</header>

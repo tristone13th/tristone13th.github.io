@@ -1,0 +1,236 @@
+body {
+    --black: #131313;
+    --dimmed-black: #303030;
+    --light: #eeffff;
+    --blue: #9cdcfe;
+    --dimmed-light: #bbcccc;
+    --theme: #ee8241;
+    --link-external-color: #888888;
+    --h1-color: var(--light);
+    --h2-color: var(--theme);
+    --h3-color: var(--theme);
+    --line-height-normal: 1.4;
+    --line-height-tight: 1.2;
+    --code-normal: var(--light);
+    --code-background: #131313;
+    --bold-color: var(--blue);
+    --h1-font: "Helvetica", "黑体";
+    --h2-font: "Helvetica", "黑体";
+    --h3-font: "Helvetica", "黑体";
+    --font-adaptive-normal: 20px;
+    --h1-size: calc(1.5 * var(--font-adaptive-normal));
+    --h2-size: calc(1 * var(--font-adaptive-normal));
+    --h3-size: calc(1 * var(--font-adaptive-normal));
+    --code-size: var(--font-adaptive-normal);
+    --h1-weight: 400;
+    --h2-weight: 400;
+    --h3-weight: 400;
+    --text-normal: var(--light);
+    --text-highlight-bg: var(--theme);
+    --blockquote-background-color: var(--dimmed-black);
+    --table-text-size: var(--font-adaptive-normal);
+    --blockquote-border-color: var(--dimmed-light);
+    --blockquote-border-thickness: 3px;
+    --table-border-color: #777777;
+    --table-text-color: var(--dimmed-light);
+    --table-header-color: var(--dimmed-light);
+    --table-add-button-background: var(--theme);
+    --table-drag-handle-color: var(--black);
+    --table-drag-handle-background: var(--theme);
+    --table-add-button-border-color: var(--theme);
+    --background-primary: var(--black);
+    --background-primary-alt: var(--black);
+    --background-secondary: var(--black);
+    --background-secondary-alt: var(--black);
+    --tab-container-background: var(--black);
+    --titlebar-background-focused: var(--dimmed-black);
+    --tab-text-color-focused-active-current: var(--theme);
+    --code-function: var(--theme);
+}
+
+.HyperMD-header-1 {
+    text-align: center;
+}
+
+.cm-header-2:after {
+    content: "";
+    height: 1px;
+    width: 100%;
+    background-color: #ee8241;
+    position: absolute;
+    bottom: -.2em;
+    left: 50%;
+    transform: translate(-50%);
+}
+
+.mermaid {
+    background-color: #222;
+    text-align: center;
+}
+
+.cm-sizer {
+    margin-left: 10%;
+    max-width: 80%;
+}
+
+/* xml-tag */
+.cm-tag {
+    color: #ee8241;
+}
+
+/* sudo in bash */
+.cm-builtin {
+    color: #ee8241;
+}
+
+/* attribute in bash */
+.cm-attribute {
+    color: #f7397d;
+}
+
+.cm-variable {
+    color: #eeffff;
+}
+
+.cm-meta {
+    color: #f7397d;
+}
+
+.cm-variable-3 {
+    color: #ee8241;
+}
+
+.cm-keyword {
+    color: #f7397d;
+}
+
+.cm-def {
+    color: #abd166;
+}
+
+.cm-comment {
+    color: #c99677 !important;
+}
+
+.cm-string {
+    color: #c99677;
+}
+
+/* true or false */
+.cm-atom {
+    color: #c99677;
+}
+
+.cm-operator {
+    color: #9cdcfe;
+}
+
+.cm-number {
+    color: #b5cea8;
+}
+
+.HyperMD-codeblock-begin {
+    border-top: 1px solid #666;
+}
+
+.HyperMD-codeblock-end {
+    border-bottom: 1px solid #666;
+}
+
+.HyperMD-codeblock {
+    border-left: 1px solid #666;
+    border-right: 1px solid #666;
+    font-size: calc(0.75 * var(--font-adaptive-normal)) !important;
+}
+
+.cm-inline-code {
+    background-color: #303030 !important;
+}
+
+.HyperMD-header>.cm-inline-code {
+    color: #ee8241 !important;
+}
+
+li {
+    font-size: 1rem;
+    line-height: 1.75;
+    margin: 0.25rem;
+    font-family: 'Times New Roman', 宋体;
+}
+
+/* 表格居中 */
+.markdown-reading-view table {
+    margin: 0 auto;
+}
+
+.cm-scroller {
+    padding-top: 0 !important;
+}
+
+.markdown-source-view.mod-cm6 .cm-table-widget {
+    padding: var(--size-4-4);
+    margin: 0 auto;
+}
+
+.table-wrapper {
+    margin: 0 auto;
+}
+
+.table-cell-wrapper {
+    text-align: center;
+}
+
+table {
+    font-family: 'Times New Roman', 宋体;
+    border-top: solid #777777 3px;
+    border-bottom: solid #777777 3px;
+}
+
+td {
+    padding: 0 0 0 0 !important;
+}
+
+th {
+    padding: 0 0 0 0 !important;
+}
+
+.nav-file-title,
+.nav-folder-title {
+    margin-top: 0.1rem;
+    margin-bottom: 0.1rem;
+    font-size: 1rem;
+    font-family: "Times New Roman", "宋体";
+}
+
+.nav-file-title .is-active {
+    color: #eeffff;
+}
+
+.inline-title {
+    font-family: 'Helvetica', '黑体';
+    text-align: center;
+    color: #aaaaaa;
+    background-color: #202020;
+}
+
+.workspace-leaf-resize-handle {
+    display: none;
+}
+
+.mod-left-split {
+    width: 300px;
+}
+
+/* center the image */
+img {
+    margin: auto;
+    display: block;
+}
+
+.markdown-source-view.mod-cm6 .cm-content>* {
+    margin: auto auto !important;
+}
+
+.is-flashing {
+    color: var(--black);
+}

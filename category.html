@@ -1,0 +1,54 @@
+---
+layout: default
+title: Category
+permalink: /category/
+---
+
+<div class="home">
+  <h1 class="page-heading">Category</h1>
+
+  <div class="tags">
+    <ul class="label">
+
+      {% assign num_all = 0 %}
+      {% for tag in site.categories %}
+      {% assign num_all = tag[1]| size | plus: num_all %}
+      {% endfor %}
+
+      <li>
+        <a>
+          {% assign name = "ALL" %}
+          <span style="color: #9cdcfe">{{name}}</span>
+          <span class="count" style="color: #9cdcfe">{{num_all}}</span>
+        </a>
+      </li>
+
+      {% assign cat = site.categories | sort %}
+      {% for tag in cat %}
+      <li>
+        <a href="#{{tag[0]}}">
+          <span>{{tag[0]}}</span>
+          <span class="count">{{tag[1]|size}}</span>
+        </a>
+      </li>
+      {% endfor %}
+
+    </ul>
+  </div>
+
+  <ul class="post-list">
+    {% capture categories %}{% for category in site.categories %}{{ category | first }}{% unless forloop.last %},{% endunless %}{% endfor %}{% endcapture %}
+    {% assign category = categories | split:',' | sort %}
+    {% for item in (0..site.categories.size) %}{% unless forloop.last %}
+    {% capture word %}{{ category[item] | strip_newlines }}{% endcapture %}
+    <h2 class="category" id="{{ word }}">{{ word }}</h2>
+    <ul>
+      {% for post in site.categories[word] %}{% if post.title != null %}
+      <li><span>{{ post.date | date: "%b %d" }}</span> » <a href="{{ site.baseurl}}{{ post.url }}">{{ post.title }}</a>
+      </li>
+      {% endif %}{% endfor %}
+    </ul>
+    {% endunless %}{% endfor %}
+  </ul>
+
+</div>

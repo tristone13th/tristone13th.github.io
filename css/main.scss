@@ -1,0 +1,123 @@
+---
+# Only the main Sass file needs front matter (the dashes are enough)
+---
+@charset "utf-8";
+
+$base-font-family: "Times New Roman", 宋体;
+$title-font-family: 'Helvetica', 黑体;
+$base-font-size: 17px;
+$small-font-size: $base-font-size * 0.875;
+$code-font-size: 15px;
+$base-line-height: 1.5;
+$code-font-family: "Ubuntu Mono";
+
+// Width of the content area
+$content-width: 800px;
+
+$on-palm: 600px;
+$on-laptop: 800px;
+
+$theme: #ee8241;
+$color-link: #036;
+$color-link-hover: #069;
+
+// $header-bg: #475B64;
+$header-bg: #131313;
+$header-bg-hover: #333333;
+$header-link: #eeffff;
+$header-fg: #eeffff;
+
+// color
+$oc-gray-list: (
+    "0": #f8f9fa,
+    "1": #f1f3f5,
+    "2": #e9ecef,
+    "3": #dee2e6,
+    "4": #ced4da,
+    "5": #adb5bd,
+    "6": #868e96,
+    "7": #495057,
+    "8": #343a40,
+    "9": #212529
+);
+
+$oc-gray-0: map-get($oc-gray-list, "0");
+$oc-gray-1: map-get($oc-gray-list, "1");
+$oc-gray-2: map-get($oc-gray-list, "2");
+$oc-gray-3: map-get($oc-gray-list, "3");
+$oc-gray-4: map-get($oc-gray-list, "4");
+$oc-gray-5: map-get($oc-gray-list, "5");
+$oc-gray-6: map-get($oc-gray-list, "6");
+$oc-gray-7: map-get($oc-gray-list, "7");
+$oc-gray-8: map-get($oc-gray-list, "8");
+$oc-gray-9: map-get($oc-gray-list, "9");
+
+$base-color: $oc-gray-8;
+$base-lighten-color: $oc-gray-6;
+
+@mixin media-query($device) {
+    @media screen and (max-width: $device) {
+        @content;
+    }
+}
+
+// Import partials from `sass_dir` (defaults to `_sass`)
+@import "base",
+"animate",
+"layout",
+"syntax-highlighting",
+"easybook",
+"https://fonts.googleapis.com/css?family=Ubuntu+Mono"
+;
+
+
+// Tags
+.tags {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding: 0%;
+}
+
+.tags>.label {
+    // > li:before {
+    //   content: "";
+    // }
+
+    >li {
+        margin: 0;
+        font-size: $base-font-size;
+        font-weight: 500;
+        display: inline;
+
+        >a {
+            display: inline-block;
+            margin: 1px;
+            color: #eeffff;
+            background-color: #333;
+            border-radius: 3px;
+
+            span {
+                float: left;
+                padding: .5px 5px;
+
+                &.count {
+                    background-color: #444;
+                    border-radius: 0 3px 3px 0;
+                }
+            }
+        }
+    }
+}
+
+.tags>.tag {
+    a {
+        color: $base-color;
+    }
+
+    time {
+        color: $base-lighten-color;
+        font-size: $small-font-size;
+        font-weight: 300;
+        margin-left: 3px;
+    }
+}

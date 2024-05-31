@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .node circle {
+      fill: #EEFFFF;
+      stroke: #9cdcfe;
+      stroke-width: 3px;
+    }
+
+    .node text {
+      fill: #EEFFFF;
+      font: 12px sans-serif;
+    }
+
+    .link {
+      fill: none;
+      stroke: #EEFFFF;
+      stroke-width: 1px;
+    }
+  </style>
+  <style>
+    .page-content {
+      position: relative;
+    }
+
+    .col-main {
+      display: none;
+      position: fixed;
+      width: 80vw;
+      height: 80vh;
+      overflow-y: auto;
+      left: 10vw;
+      top: 10vh;
+      box-shadow: 0 1px 4px #999;
+      outline: 1px solid #CCC;
+      background: #131313;
+    }
+
+    .tip {
+      position: absolute;
+      left: 3vw;
+      top: 2vh;
+      color: #9cdcfe;
+    }
+  </style>
+
+  <!-- We use katex for it is faster and output texts -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+
+  <style>
+    .katex-display .katex {
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+  </style>
+
+  </html>
+</head>
+
+<body>
+
+  <div class="page-content">
+    <p class="tip">Click to expand and collapse <br> Double click to show contents</p>
+    <div class="col-main">
+      <div class="post">
+        <article class="post-content">
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script type="text/javascript">
+    // 添加思维导图
+    function MindMapping(mindmapData) {
+      // Set the dimensions and margins of the diagram
+      const marginH = 175
+      const marginV = 30
+      var margin = { top: marginV, right: marginH, bottom: marginV, left: marginH },
+        width = window.innerWidth - margin.left - margin.right - 50,
+        height = window.innerHeight - margin.top - margin.bottom;
+
+      var i = 0,
+        duration = 400,
+        root;
+
+      // Assigns parent, children, height, depth
+      root = d3.hierarchy(mindmapData, function (d) { return d.children; });
+
+      // Collapse all levels
+      var maxChildNum = 0; // for calculating max height of the mindmap
+      collapse(root, mindmapData)
+
+      // open first level
+      root.children = root._children
+      root._children = null
+
+      // declares a tree layout and assigns the size
+      height = height * maxChildNum / 8;
+
+      // append the svg object to the body of the page
+      // appends a 'group' element to 'svg'
+      // moves the 'group' element to the top left margin
+      var svg = d3.select(".page-content").insert("svg", "first-child")
+        .attr("width", width + margin.right + margin.left)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate("
+          + margin.left + "," + margin.top + ")");
+
+      root.x0 = height / 2;
+      root.y0 = 0;
+      var treemap = d3.tree().size([height, width]);
+
+      update(root);
+
+      // Recursive collapse the node and all it's children
+      function collapse(d3Node, dataNode) {
+        d3Node.content = dataNode.content
+        if (d3Node.children) {
+          d3Node._children = d3Node.children
+          maxChildNum = Math.max(maxChildNum, d3Node._children.length);
+          for (var i = 0; i < d3Node._children.length; i++) {
+            collapse(d3Node._children[i], dataNode.children[i])
+          }
+          d3Node.children = null
+        }
+      }
+
+      function update(source) {
+        // Assigns the x and y position for the nodes
+        var treeData = treemap(root);
+
+        // Compute the new tree layout.
+        var nodes = treeData.descendants(),
+          links = treeData.descendants().slice(1);
+
+        // Normalize for fixed-depth.
+        // set the distance between node and its parent node
+        nodes.forEach(function (d) { d.y = d.depth * width / 4 });
+
+        // ****************** Nodes section ***************************
+        // Update the nodes...
+        var node = svg.selectAll('g.node')
+          .data(nodes, function (d) { return d.id || (d.id = ++i); });
+
+        // Enter any new nodes at the parent's previous position.
+        var nodeEnter = node.enter().append('g')
+          .attr('class', 'node')
+          .attr("transform", function (d) {
+            return "translate(" + source.y0 + "," + source.x0 + ")";
+          })
+          .on('click', click)
+          .on('dblclick', dblclick);
+
+        // Add Circle for the nodes
+        nodeEnter.append('circle')
+          .attr('class', 'node')
+          .attr('r', 1e-6)
+          .style("fill", function (d) {
+            return d._children ? "steelblue" : "#fff";
+          })
+          .style("stroke", function (d) {
+            if (d.content) {
+              return d.content.length != 0 ? "steelblue" : "#fff";
+            } else {
+              return "#fff"
+            }
+          });
+
+        // Add labels for the nodes
+        nodeEnter.append('text')
+          .attr("x", 0)
+          // .attr("x", function (d) {
+          //     return d.children || d._children ? -13 : 13;
+          // })
+          .attr("text-anchor", "middle")
+          // .attr("text-anchor", function (d) {
+          //     return d.children || d._children ? "end" : "start";
+          // })
+          .text(function (d) { return d.data.name; })
+          .each(function (d) {
+            var text = d3.select(this),
+              words = d.data.name.split('').reverse(),
+              word,
+              line = [],
+              lineNumber = 0,
+              x = +text.attr('x'),
+              tspan = text.text(null).append('tspan').attr('x', x).attr('y', "2em");
+            while (word = words.pop()) {
+              line.push(word);
+              tspan.text(line.join(''));
+              // 设置了最多显示两行，然后省略号
+              if (lineNumber == 0 && tspan.node().getComputedTextLength() > 190) {
+                line.pop();
+                tspan.text(line.join('')).attr('y', "2em");
+                line = [word];
+                ++lineNumber;
+                tspan = text.append('tspan').attr('x', x).attr('y', "3em").text(word);
+              }
+              else if (lineNumber == 1 && tspan.node().getComputedTextLength() > 170) {
+                tspan.text(line.join('') + '...');
+                words = [];
+              };
+            }
+          });
+
+        // UPDATE
+        var nodeUpdate = nodeEnter.merge(node);
+
+        // Transition to the proper position for the node
+        nodeUpdate.transition()
+          .duration(duration)
+          .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+          });
+
+        // Update the node attributes and style
+        nodeUpdate.select('circle.node')
+          .attr('r', 10)
+          .style("fill", function (d) {
+            return d._children ? "steelblue" : "#fff";
+          })
+          .style("stroke", function (d) {
+            if (d.content) {
+              return d.content.length != 0 ? "steelblue" : "#fff";
+            } else {
+              return "#fff"
+            }
+          })
+          .attr('cursor', 'pointer');
+
+
+        // Remove any exiting nodes
+        var nodeExit = node.exit().transition()
+          .duration(duration)
+          .attr("transform", function (d) {
+            return "translate(" + source.y + "," + source.x + ")";
+          })
+          .remove();
+
+        // On exit reduce the node circles size to 0
+        nodeExit.select('circle')
+          .attr('r', 1e-6);
+
+        // On exit reduce the opacity of text labels
+        nodeExit.select('text')
+          .style('fill-opacity', 1e-6);
+
+        // ****************** links section ***************************
+        // Update the links...
+        var link = svg.selectAll('path.link')
+          .data(links, function (d) { return d.id; });
+
+        // Enter any new links at the parent's previous position.
+        var linkEnter = link.enter().insert('path', "g")
+          .attr("class", "link")
+          .attr('d', function (d) {
+            var o = { x: source.x0, y: source.y0 }
+            return diagonal(o, o)
+          });
+
+        // UPDATE
+        var linkUpdate = linkEnter.merge(link);
+
+        // Transition back to the parent element position
+        linkUpdate.transition()
+          .duration(duration)
+          .attr('d', function (d) { return diagonal(d, d.parent) });
+
+        // Remove any exiting links
+        var linkExit = link.exit().transition()
+          .duration(duration)
+          .attr('d', function (d) {
+            var o = { x: source.x, y: source.y }
+            return diagonal(o, o)
+          })
+          .remove();
+
+        // Store the old positions for transition.
+        nodes.forEach(function (d) {
+          d.x0 = d.x;
+          d.y0 = d.y;
+        });
+
+        // Creates a curved (diagonal) path from parent to the child nodes
+        function diagonal(s, d) {
+          path = `M ${s.y} ${s.x}
+                C ${(s.y + d.y) / 2} ${s.x},
+                ${(s.y + d.y) / 2} ${d.x},
+                ${d.y} ${d.x}`
+          return path
+        }
+      }
+
+      var _time = null;
+      // Toggle children on click.
+      function click(event, d) {
+        clearTimeout(_time);
+        _time = setTimeout(function () {
+          if (d.children) {
+            d._children = d.children;
+            d.children = null;
+          } else {
+            d.children = d._children;
+            d._children = null;
+          }
+          update(d);
+        }, 250);
+      }
+
+      function dblclick(event, d) {
+        clearTimeout(_time)
+        var post = document.querySelector(".post-content")
+        var first = post.firstElementChild;
+        while (first) {
+          first.remove();
+          first = post.firstElementChild;
+        }
+        if (d.content.length == 0) {
+          return
+        }
+        for (var i = 0; i < d.content.length; i++) {
+          post.appendChild(d.content[i])
+        }
+        col_main = document.querySelector(".col-main")
+        col_main.style.display = "block";
+      }
+    }
+
+    MindMapping(window.opener.mindmapData)
+    document.querySelector("svg").onclick = function () {
+      document.querySelector(".col-main").style.display = "none";
+    }
+  </script>
+</body>

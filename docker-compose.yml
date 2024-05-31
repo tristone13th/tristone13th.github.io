@@ -1,0 +1,16 @@
+version: '3'
+services:
+  # jekyll:
+  #   build: ./.devcontainer
+  #   command: bash -c "bundle install && jekyll serve --incremental"
+  #   ports:
+  #     - 80:4000
+  #   volumes:
+  #     - .:/srv/jekyll
+  typesense:
+    image: typesense/typesense:0.22.2
+    ports:
+      - 8108:8108
+    volumes:
+      - /tmp/typesense-data:/data
+    command: ["--data-dir", "/data", "--api-key=trist", "--enable-cors"]

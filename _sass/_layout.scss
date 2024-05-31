@@ -1,0 +1,341 @@
+body {
+    background-color: #222222;
+}
+
+.wrapper {
+    margin: 0 auto;
+    max-width: 1100px;
+}
+
+@media (max-width: 1120px) {
+    .wrapper {
+        max-width: 800px;
+    }
+}
+
+.header {
+    line-height: $base-font-size * 2;
+    background-color: $header-bg;
+    padding: 10px;
+    margin: 0;
+
+    &:after {
+        clear: both;
+        content: ' ';
+        display: block;
+    }
+
+    #sidebar-toggle {
+        display: none;
+    }
+
+    .site-title {
+        // float: left;
+        color: $header-fg;
+        font-size: $base-font-size;
+        line-height: $base-font-size * 2;
+    }
+
+    .site-nav {
+        float: right;
+        display: inline-block;
+
+        a {
+            text-decoration: none;
+            color: $header-link;
+            padding: 10px 15px;
+            white-space: nowrap;
+
+            &:hover,
+            &:focus {
+                background: $header-bg-hover;
+            }
+        }
+    }
+}
+
+$col-main-width: 800px;
+$col-second-width: 300px;
+$hide-sidebar-screen-width: 1120px;
+
+.header-placeholder {
+    position: absolute;
+}
+
+
+/*
+使用 @media 查询，你可以针对不同的媒体类型定义不同的样式。
+
+@media 可以针对不同的屏幕尺寸设置不同的样式，特别是如果你需要设置设计响应式的页面，@media 是非常有用的。
+
+当你重置浏览器大小的过程中，页面也会根据浏览器的宽度和高度重新渲染页面。
+*/
+@media (max-width: $hide-sidebar-screen-width) {
+    .header-placeholder {
+        position: static;
+    }
+
+    .header {
+        position: fixed;
+        left: 0;
+        top: 0;
+        right: 0;
+        z-index: 20;
+
+        #sidebar-toggle {
+            float: right;
+            display: block;
+            cursor: pointer;
+            margin: -10px;
+            margin-left: 0;
+            padding: 10px;
+            background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIj8+PHN2ZyBmaWxsPSJub25lIiBoZWlnaHQ9IjI0IiBzdHJva2U9IiNGRkYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIyIiB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48bGluZSB4MT0iMyIgeDI9IjIxIiB5MT0iMTIiIHkyPSIxMiIvPjxsaW5lIHgxPSIzIiB4Mj0iMjEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSIzIiB4Mj0iMjEiIHkxPSIxOCIgeTI9IjE4Ii8+PC9zdmc+);
+            background-repeat: no-repeat;
+            background-position: center center;
+            color: transparent;
+        }
+
+        .site-nav {
+            display: none;
+        }
+
+        &.expand-sidebar .site-nav {
+            display: inline-block;
+            animation: ebani-fadein ease .5s 1;
+        }
+    }
+}
+
+.page-content {
+    padding: 30px 0;
+
+    .wrapper {
+        position: relative;
+        background: #131313;
+        box-shadow: 0 1px 2px #444;
+        outline: 1px solid #444;
+
+        &:after {
+            clear: both;
+            content: '';
+            display: block;
+        }
+
+        &:before {
+            content: '';
+            display: block;
+            position: absolute;
+            width: $col-second-width;
+            height: 100%;
+            right: 0;
+            top: 0;
+            background: #222222;
+        }
+    }
+
+    img {
+        max-width: 100%;
+    }
+}
+
+.col-main {
+    position: relative;
+    box-sizing: border-box;
+    padding: 30px;
+    width: $col-main-width;
+    float: left;
+    animation: ebani-descend ease .5s 1;
+
+    h1,
+    h2,
+    h3,
+    h4,
+    .post-meta,
+    .rss-link {
+        animation: ebani-ascend ease .5s 1;
+    }
+
+    article,
+    .post-excerpt {
+
+        table,
+        pre,
+        img {
+            animation: ebani-ascend ease .3s 1;
+        }
+    }
+
+    ul,
+    p {
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    ;
+}
+
+.col-second {
+    position: relative;
+    box-sizing: border-box;
+    float: right;
+    width: $col-second-width;
+    padding: 20px;
+    background: #222;
+    z-index: 10;
+
+    a {
+        color: #9cdcfe;
+    }
+
+    p {
+        color: #eeffff;
+    }
+
+    ;
+}
+
+.col-box {
+    color: #666;
+    font-size: $small-font-size;
+    padding-bottom: 20px;
+
+    p {
+        margin: 0;
+    }
+
+    ul {
+        padding-left: 20px;
+        margin: 0;
+    }
+
+    &:not(:first-child) {
+        border-top: 1px solid #ccc;
+        padding-top: 20px;
+    }
+
+    .col-box-title {
+        color: #eeffff;
+        margin-bottom: 10px;
+        font-size: $small-font-size * 1.1;
+
+        .col-box-title-button {
+            font-size: $small-font-size * 1.1;
+        }
+    }
+}
+
+@media (max-width: $hide-sidebar-screen-width) {
+    .page-content .wrapper {
+        overflow: hidden;
+
+        .col-second,
+        &:before {
+            z-index: 10;
+            transition: transform .4s;
+            transform: translateX($col-second-width );
+        }
+
+        &.expand-sidebar {
+            &:before {
+                box-shadow: 0 0 4px #999;
+            }
+
+            .col-second,
+            &:before {
+                transform: translateX(0);
+            }
+        }
+    }
+
+    .col-main {
+        width: 100%;
+    }
+
+    .col-second {
+        margin-left: - $col-second-width;
+    }
+}
+
+.col-box-author {
+    text-align: center;
+
+    .avatar {
+        width: 135px;
+        height: 135px;
+        border-radius: 100%;
+        margin: 20px auto;
+        display: block;
+    }
+
+    .name {
+        font-size: $base-font-size;
+    }
+
+    .contact {
+        margin-top: 10px;
+
+        a {
+            background: #555;
+            color: #eeffff;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 5px;
+            white-space: nowrap;
+
+            &:hover {
+                transition: background 0.3s ease;
+                background: #444;
+            }
+        }
+    }
+}
+
+// footer
+.footer {
+    padding: 60px 0;
+    text-align: center;
+    color: #666;
+    font-size: $small-font-size;
+}
+
+@import "post", "home";
+
+@include media-query($on-laptop) {
+    .page-content {
+        padding: 0;
+    }
+
+    .footer {
+        padding: 15px 0;
+    }
+}
+
+@include media-query($on-palm) {
+    .header {
+        & {
+            text-align: center;
+        }
+
+        .site-nav {
+            float: none;
+        }
+
+        .site-title {
+            float: none;
+        }
+    }
+
+    .col-main {
+        padding: 10px;
+    }
+
+    .col-box {
+        width: 100%;
+        float: none;
+        margin-bottom: 20px;
+    }
+
+    pre {
+        padding: 10px;
+    }
+}

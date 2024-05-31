@@ -1,0 +1,13 @@
+{
+  "accentColor": "#ee8241",
+  "theme": "obsidian",
+  "interfaceFontFamily": "",
+  "textFontFamily": "Times New Roman,宋体",
+  "monospaceFontFamily": "UbuntuMono Nerd Font",
+  "baseFontSize": 18,
+  "nativeMenus": false,
+  "cssTheme": "",
+  "enabledCssSnippets": [
+    "misc"
+  ]
+}

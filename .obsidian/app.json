@@ -1,0 +1,15 @@
+{
+  "readableLineLength": false,
+  "showFrontmatter": true,
+  "spellcheck": true,
+  "rightToLeft": false,
+  "spellcheckLanguages": null,
+  "strictLineBreaks": false,
+  "promptDelete": false,
+  "vimMode": true,
+  "showInlineTitle": false,
+  "useTab": false,
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false
+}
