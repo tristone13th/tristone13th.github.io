@@ -38,3 +38,5 @@
 !sitemap.xml
 !docker-compose.yml
 !favicon.ico
+!.vimrc
+!.obsidian.vimrc
