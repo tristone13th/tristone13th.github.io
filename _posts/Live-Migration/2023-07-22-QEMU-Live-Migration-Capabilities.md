@@ -40,7 +40,9 @@ dst 端的每一个 device 都同意了（目前主要是 vfio 在用），dst �
 +----------------------+-----------------------+----------+
 ```
 
-The purpose of this capability is to reduce migration downtime in cases where loading of migration data in the destination can take a lot of time.
+The purpose of this capability is to **reduce migration downtime** in cases where **loading of migration data in the destination can take a lot of time**.
+
+**就是说 destination 这里在 load 最后的一些 content 的时候，source 这里可以先跑着，等到 destination load 完成后然后 source 收到 destination 这边发来的 ACK 之后，source 再进入 blackout 阶段，这样可以节省一些 migration 的时间。**
 
 Patchset 里的 background 这一栏讲的很清楚：
 
