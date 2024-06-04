@@ -164,7 +164,7 @@ static void cpu_throttle_thread(CPUState *cpu, run_on_cpu_data opaque)
 Live migration 提供了一个 Throttling 框架，这个框架使用了两个提供 CPU Throttling 的组件之一来实现 throttling：
 
 - `system/cpu-throttle.c` 提供的 CPU Throttling 机制，也就是 auto-converge feature
-- dirty limit feature 提供的一种 CPU throttling 机制。
+- dirty limit feature 提供的一种 CPU throttling 机制 dirty-limit^。
 
 这里只介绍下这个框架，对于这两种组件的实现，请参照对应的 migration capabilities。
 
