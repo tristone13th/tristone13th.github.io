@@ -159,6 +159,76 @@ static void cpu_throttle_thread(CPUState *cpu, run_on_cpu_data opaque)
 }
 ```
 
+# CPU Throttling in Live Migration
+
+Live migration 提供了一个 Throttling 框架，这个框架使用了两个提供 CPU Throttling 的组件之一来实现 throttling：
+
+- `system/cpu-throttle.c` 提供的 CPU Throttling 机制，也就是 auto-converge feature
+- dirty limit feature 提供的一种 CPU throttling 机制。
+
+这里只介绍下这个框架，对于这两种组件的实现，请参照对应的 migration capabilities。
+
+```c
+migration_bitmap_sync
+    // These 2 bitmap sync >1 second
+    // 这么做的原因是 it is an indication that the migration is not progressing efficiently.
+    // 说明这 1s 多都去发送脏页去了，也就说明在上次 bitmap sync 之后，我们有很多的脏页要发送，
+    // 这正好说明了 CPU 产生脏页的速度太快了，所以我们需要 throttle 一下。
+    if (end_time > rs->time_last_bitmap_sync + 1000)
+        migration_trigger_throttle
+```
+
+```c
+struct RAMState {
+    //...
+    // 表示上一次 trigger throttle 的时候，已经 transfered 的 bytes 数量
+    uint64_t bytes_xfer_prev;
+    // 上一次trigger throttle 的时候到这一次，多的 dirty pages 的数量
+    uint64_t num_dirty_pages_period;
+    //...
+}
+```
+
+### `migration_trigger_throttle()` QEMU
+
+```c
+static void migration_trigger_throttle(RAMState *rs)
+{
+    // 表示 trigger 的百分比 threshold，也就是新 dirty 的 bytes 占
+    // 已经传输的 bytes 到达百分之多少时候触发 CPU Throttling。
+    uint64_t threshold = migrate_throttle_trigger_threshold();
+    // 上次 throttle 到这一次 throttle 之间 transfer 了多少 bytes？
+    uint64_t bytes_xfer_period = migration_transferred_bytes() - rs->bytes_xfer_prev;
+    // 上次 throttle 到这一次 throttle 之间多了多少 dirty 的 bytes 需要传送？
+    uint64_t bytes_dirty_period = rs->num_dirty_pages_period * TARGET_PAGE_SIZE;
+    uint64_t bytes_dirty_threshold = bytes_xfer_period * threshold / 100;
+
+    /*
+     * The following detection logic can be refined later. For now:
+     * Check to see if the ratio between dirtied bytes and the approx.
+     * amount of bytes that just got transferred since the last time
+     * we were in this routine reaches the threshold. If that happens
+     * twice, start or increase throttling.
+     */
+    // 如果出现了两次超过 threshold，那么触发 throttling。
+    if ((bytes_dirty_period > bytes_dirty_threshold) && (++rs->dirty_rate_high_cnt >= 2)) {
+        rs->dirty_rate_high_cnt = 0;
+        // 第一个组件 auto-converge
+        if (migrate_auto_converge())
+            mig_throttle_guest_down(bytes_dirty_period, bytes_dirty_threshold);
+        // 第二个组件 dirty limit
+        } else if (migrate_dirty_limit())
+            migration_dirty_limit_guest();
+    }
+}
+```
+
+## Parameters for CPU Throttling in Live Migration
+
+### `throttle-trigger-threshold` QEMU
+
+The ratio of `bytes_dirty_period` and `bytes_xfer_period` to trigger throttling. It is expressed as percentage. **The default value is 50**.
+
 # User of CPU Throttling
 
 我们可以看出来 CPU Throttling 机制对外提供了一些 API：
