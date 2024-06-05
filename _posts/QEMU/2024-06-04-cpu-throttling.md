@@ -87,6 +87,7 @@ static void cpu_throttle_timer_tick(void *opaque)
         // 将 throttle_thread_scheduled 置为 1，如果之前是 0
         // 那么启动一个 cpu_throttle_thread 线程
         if (!qatomic_xchg(&cpu->throttle_thread_scheduled, 1)) {
+            // async_run_on_cpu 会 kick 目标 vCPU，然后运行我们指定的 thread: cpu_throttle_thread
             async_run_on_cpu(cpu, cpu_throttle_thread, RUN_ON_CPU_NULL);
         }
     }
