@@ -9,7 +9,6 @@
   "decompressForMDView": false,
   "onceOffCompressFlagReset": true,
   "autosave": true,
-  "autosaveInterval": 900000,
   "autosaveIntervalDesktop": 900000,
   "autosaveIntervalMobile": 300000,
   "drawingFilenamePrefix": "",
@@ -102,7 +101,7 @@
   "mdCSS": "",
   "scriptEngineSettings": {},
   "defaultTrayMode": true,
-  "previousRelease": "2.2.3",
+  "previousRelease": "2.2.4",
   "showReleaseNotes": true,
   "showNewVersionNotification": true,
   "latexBoilerplate": "\\color{blue}",
@@ -745,5 +744,6 @@
   "areaZoomLimit": 1,
   "longPressDesktop": 500,
   "longPressMobile": 500,
-  "isDebugMode": false
+  "isDebugMode": false,
+  "autosaveInterval": 900000
 }

@@ -1,12 +1,12 @@
 [
   "table-editor-obsidian",
-  "obsidian-style-settings",
   "obsidian-vimrc-support",
   "obsidian-linter",
-  "customizable-menu",
   "obsidian-advanced-uri",
   "obsidian42-strange-new-worlds",
   "obsidian-quiet-outline",
   "obsidian-scroll-to-top-plugin",
-  "obsidian-excalidraw-plugin"
+  "obsidian-excalidraw-plugin",
+  "customizable-menu",
+  "obsidian-style-settings"
 ]
