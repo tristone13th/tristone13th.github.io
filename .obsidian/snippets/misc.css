@@ -68,6 +68,12 @@ body {
     text-align: center;
 }
 
+/* 修复 mermaid 渲染的图片显示不全的问题 */
+.mermaid svg {
+    width: 100%;
+    height: auto;
+}
+
 .cm-sizer {
     margin-left: 10%;
     max-width: 80%;

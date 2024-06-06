@@ -11,5 +11,6 @@
   "useTab": false,
   "alwaysUpdateLinks": true,
   "newLinkFormat": "shortest",
-  "useMarkdownLinks": false
+  "useMarkdownLinks": false,
+  "focusNewTab": false
 }
