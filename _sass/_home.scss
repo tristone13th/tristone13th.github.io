@@ -63,6 +63,7 @@
         }
 
         .post-excerpt {
+            margin: 0 20px;
 
             &,
             * {
@@ -99,8 +100,6 @@
                     opacity: 1;
                 }
             }
-
-            margin: 0 20px;
         }
 
         @include media-query($on-palm) {
