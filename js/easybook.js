@@ -386,7 +386,9 @@ var filepath = document.querySelector('#file-path').getAttribute("data-path").re
 const headings = document.querySelectorAll('h1:not(.page-heading), h2:not(.category), h3, h4, h5, h6');
 headings.forEach((heading) => {
     heading.addEventListener('click', () => {
-        window.location.href = 'obsidian://advanced-uri?vault=tristone13th.github.io&openmode=true&filepath=' + filepath + '&heading=' + heading.textContent
+        const url = 'obsidian://advanced-uri?vault=tristone13th.github.io&openmode=true&filepath=' + encodeURIComponent(filepath) + '&heading=' + encodeURIComponent(heading.textContent)
+        console.log(url)
+        window.location.href = url
     });
 });
 
