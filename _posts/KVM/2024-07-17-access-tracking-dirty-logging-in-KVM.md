@@ -5,14 +5,27 @@ title: Access Tracking & Dirty Logging in KVM
 
 不一定有 EPT 的平台都支持 EPT A/D bits，但是所有 Host page table（影子页表的情况） 都有 A/D bits，因为有 VMX 支持的平台肯定 host page 早就支持 A/D bits 了。
 
-### Overview of Access tracking in KVM
+### Overview of Access tracking in KVM / EPT entry RWX bits / EPT non-present entry
 
 分三种情况：
 
 - 使用 EPT：
     - EPT 支持 A/D bits：仅仅清理掉 A bit 的数据就行，不需要 access tracking 因为硬件已经做了。
-    - EPT 不支持 A/D bits：把 SPTE 里面的 readable bit 设置为 0，从而能够 intercept，不需要置为 non-present 的。
+    - EPT 不支持 A/D bits：把 SPTE 里面的 RWX bits 设置为 0，从而能够 intercept，这其实就相当于把这个页置为了 non-present 的，因为 EPT PTE 的 format 里并没有一个 Present bit，请看下面的详细说明。
 - 使用影子页表：仅仅清理掉 A bit 数据就行了，因为影子页表都是支持 A/D bits，access tracking 硬件已经做了。
+
+对于置 RWX bits 为 0 就相当于置为 non-present 的说明：From SDM Table 28-7. Exit Qualification for EPT Violations:
+
+- Bit 3: The logical-AND of bit 0 in the EPT paging-structure entries used to translate the guest-physical address of the access causing the EPT violation (indicates whether the guest-physical address was readable).
+- Bit 4: The logical-AND of bit 1 in the EPT paging-structure entries used to translate the guest-physical address of the access causing the EPT violation (indicates whether the guest-physical address was writeable).
+- Bit 5: The logical-AND of bit 2 in the EPT paging-structure entries used to translate the guest-physical address of the access causing the EPT violation.
+
+```c
+handle_ept_violation
+    // 通过 translate 这个 GPA 的所有 entries 计算出来的与过之后的 readable, writable 和 executable 的 bits 都是 0，
+    // 那么就是 non-present，但凡有一个不是 0，都表示这个页是 present 的。
+	error_code |= (exit_qualification & EPT_VIOLATION_RWX_MASK) ? PFERR_PRESENT_MASK : 0;
+```
 
 ### `mark_spte_for_access_track()` KVM
 
