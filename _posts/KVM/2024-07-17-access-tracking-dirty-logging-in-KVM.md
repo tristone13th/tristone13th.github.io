@@ -3,6 +3,44 @@ categories: KVM
 title: Access Tracking & Dirty Logging in KVM
 ---
 
+不一定有 EPT 的平台都支持 EPT A/D bits，但是所有 Host page table（影子页表的情况） 都有 A/D bits，因为有 VMX 支持的平台肯定 host page 早就支持 A/D bits 了。
+
+### Overview of Access tracking in KVM
+
+分三种情况：
+
+- 使用 EPT：
+    - EPT 支持 A/D bits：仅仅清理掉 A bit 的数据就行，不需要 access tracking 因为硬件已经做了。
+    - EPT 不支持 A/D bits：把 SPTE 里面的 readable bit 设置为 0，从而能够 intercept，不需要置为 non-present 的。
+- 使用影子页表：仅仅清理掉 A bit 数据就行了，因为影子页表都是支持 A/D bits，access tracking 硬件已经做了。
+
+### `mark_spte_for_access_track()` KVM
+
+```c
+u64 mark_spte_for_access_track(u64 spte)
+{
+    // 我们有 A/D bits 的硬件支持，所以我们清空 A bit 就好了。
+    // 硬件是自动进行 access track 的，所以不需要为了 intercept 而改 SPTE。
+    // 影子页表会走这个 path。因为影子页表一定是 enable 了 A/D feature 的。
+    // EPT with ad bits support 也会走这个 path。
+	if (spte_ad_enabled(spte))
+		return spte & ~shadow_accessed_mask;
+    // 下面的 code 只有在 EPT 没有 ad bits support 才会走到。
+
+    // 已经 enable 了 access tracking，因为 RWX 已经是 0 了，直接返回就好。
+	if (is_access_track_spte(spte))
+		return spte;
+
+    //...
+    // 把 RWX 的值移到 reserved 区
+	spte |= (spte & SHADOW_ACC_TRACK_SAVED_BITS_MASK) << SHADOW_ACC_TRACK_SAVED_BITS_SHIFT;
+    // 清空 RWX，这样就 enable track 了
+	spte &= ~shadow_acc_track_mask;
+
+	return spte;
+}
+```
+
 ## Writable SPTE / MMU-writable SPTE / Host-writable SPTE / `shadow_host_writable_mask` / `shadow_mmu_writable_mask` / `PT_WRITABLE_MASK` KVM
 
 ```c
@@ -163,27 +201,184 @@ For SPT case（Guest 切 CR3 的时候其实 load 的不是它自己的 page tab
 
 同样，对于 Dirty bit，在 SPT 上设置为不可写的，guest 写了一个 page 后就会 trap，从而 VMM 会把这个 PTE 改为可写的，并设置 guest page table 里的 D bit，这就模拟了**guest 写一个页会导致其 page table entry 的 dirty bit 被硬件自动置上的情况**。在 guest clear D bit 的时候，trap 出来再次把这个 page 设置为不可写的状态。这样才能进行下次 dirty logging。
 
-### `mark_spte_for_access_track()` KVM
+# Masks/Bits In KVM for Access Tracking & Dirty Logging
+
+和 access tracking 以及 dirty logging 有关的 bits/masks 可以从下面两个维度进行分类：
+
+- Hardware 还是 Software 定义的 bit，比如有的 bit 就是 EPT 或者 Host 页表里定义的，这是硬件定义的。
+- A/D bit 还是 R/W/X bit，这些 bit 都和我们要讨论的有关系。A/D bit 用来告诉 software 一个页被 accessed/dirty 了还是没有，R/W/X bit 用来控制 intercept guest 对于一个页的读和写。
+
+这其中大部分都是定义在文件 `arch/x86/kvm/mmu/spte.h` 中的，有时间可以多研究一下这个文件。
+
+### `PT_ACCESSED_MASK` / `PT_DIRTY_MASK` / `PT_ACCESSED_SHIFT` / `PT_DIRTY_SHIFT` KVM
+
+分类：硬件/A/D。
+
+虽然前缀是 PT，但是其实是定义在文件 `arch/x86/kvm/mmu.h` 中：
 
 ```c
+#define PT_ACCESSED_SHIFT 5
+#define PT_ACCESSED_MASK (1ULL << PT_ACCESSED_SHIFT)
+#define PT_DIRTY_SHIFT 6
+#define PT_DIRTY_MASK (1ULL << PT_DIRTY_SHIFT)
+```
+
+这是 host 页表的 format 里的 A/D bit 的位置，分别表示是否 accessed 以及是否 dirty。
+
+### `VMX_EPT_ACCESS_BIT` / `VMX_EPT_DIRTY_BIT` KVM
+
+分类：硬件/A/D。
+
+SDM Table 29-7. Format of an EPT Page-Table Entry that Maps a 4-KByte Page 里定义的，关于 EPT 页表格式的 bit 8 和 bit 9，分别代表 whether software has accessed the 4-KByte page 和 whether software has written to the 4-KByte page。
+
+```c
+#define VMX_EPT_ACCESS_BIT			(1ull << 8)
+#define VMX_EPT_DIRTY_BIT			(1ull << 9)
+```
+
+### `VMX_EPT_READABLE_MASK` / `VMX_EPT_WRITABLE_MASK` / `VMX_EPT_EXECUTABLE_MASK` KVM
+
+分类：硬件/R/W/X。
+
+```c
+#define VMX_EPT_READABLE_MASK			0x1ull
+#define VMX_EPT_WRITABLE_MASK			0x2ull
+#define VMX_EPT_EXECUTABLE_MASK			0x4ull
+```
+
+表示 EPT PTE 里 readable, writable, executable 的位置。
+
+### `shadow_accessed_mask` / `shadow_dirty_mask` KVM
+
+表示 A/D bit 的位置。
+
+```c
+vmx_init
+    kvm_x86_vendor_init
+        kvm_mmu_vendor_module_init
+            kvm_mmu_reset_all_pte_masks
+                // First set to PT_ACCESSED_MASK
+            	shadow_accessed_mask = PT_ACCESSED_MASK;
+                shadow_dirty_mask	= PT_DIRTY_MASK;
+        r = ops->hardware_setup();
+            vmx_hardware_setup
+                if (enable_ept)
+                    kvm_mmu_set_ept_masks
+                        // Second set to VMX_EPT_ACCESS_BIT
+                        shadow_accessed_mask = has_ad_bits ? VMX_EPT_ACCESS_BIT : 0ull;
+                    	shadow_dirty_mask	= has_ad_bits ? VMX_EPT_DIRTY_BIT : 0ull;
+```
+
+从上面的流程中我们可以看出来我们先设置为了 `PT_ACCESSED_MASK`，然后设置为了 `VMX_EPT_ACCESS_BIT` 或 0。也就是 `shadow_accessed_mask` 有三种可能的值：
+
+- `PT_ACCESSED_MASK`：如果我们不打算使用 EPT，这个时候我们要用影子页表，影子页表也是 host 页表的一种，所以这个时候 A/D bit 就是 host 页表的 A/D bit。
+- `VMX_EPT_ACCESS_BIT`：如果我们要 enable EPT，那么我们设置为 EPT 硬件定义的 bit。
+- `0`：enable EPT 但是没有办法 enable access tracking / dirty logging，因为硬件不支持，详见 `cpu_has_vmx_ept_ad_bits()`，那么置为 0。
+
+介绍完了设置的地方，我们来看使用的地方：
+
+- Clear accessed bit：清除硬件置上的 accessed bit，可能是为了重新 write block 这个页？
+
+### `SPTE_TDP_AD_MASK` / `SPTE_TDP_AD_DISABLED` / `SPTE_TDP_AD_ENABLED` / `SPTE_TDP_AD_WRPROT_ONLY` / KVM
+
+软件定义在 reserved bits 里的用来 indicate 这个 EPT/Host PT 里的 PTE 有没有 enable A/D bits feature。
+
+```c
+#define SPTE_TDP_AD_SHIFT		52
+#define SPTE_TDP_AD_MASK		(3ULL << SPTE_TDP_AD_SHIFT)
+// 不 write protect，因为我们有 A/D bits，不需要 write protect
+#define SPTE_TDP_AD_ENABLED		(0ULL << SPTE_TDP_AD_SHIFT)
+// 不 write protect，也没有 A/D bits。
+#define SPTE_TDP_AD_DISABLED		(1ULL << SPTE_TDP_AD_SHIFT)
+// 我们不需要 A/D bits，只需要 write protect。
+#define SPTE_TDP_AD_WRPROT_ONLY		(2ULL << SPTE_TDP_AD_SHIFT)
+```
+
+如果是 `SPTE_TDP_AD_DISABLED`，那么表示硬件没有能力（主要是 EPT，因为 Host page table 肯定有能力）来帮我们更新 A/D bit。这其实是整体 A/D disable or not 的具象化，整体 A/D disable 落到实处就是每一个 SPTE 都要设置为 disable 的。
+
+因为其实利用 EPT/host page table 的 reserved bit，所以这个是通用的，可以表示一个 EPT SPTE，也可以表示一个 Host page table 的 PTE 里 A/D 到底有没有被 enable。**所以说这个可以用在 EPT enable 的情况下，也可以用在使用影子页表的情况下。**
+
+因为 Host page table 本身就是一定有 A/D bits 支持的，所以肯定值是 `SPTE_TDP_AD_ENABLED`。同时 Host page table PTE 的 reserved bits 一定需要是 0，所以我们必须要把 `SPTE_TDP_AD_ENABLED` 定义成 0 才好。
+
+### `shadow_acc_track_mask` KVM
+
+**这个变量表示当没有 A/D bits support 的时候，如果我们要 access track 一个 SPTE，需要把哪些 bits 置为 0。**
+
+虽然这个 function 是 general call 的，但是其实只有 EPT without A/D bits support 的情况才会使用到这个变量，影子页表里 A/D bits 默认都是有的，所以其实不需要置什么 bit 来 enable access track。
+
+```c
+vmx_init
+    kvm_x86_vendor_init
+        kvm_mmu_vendor_module_init
+            kvm_mmu_reset_all_pte_masks
+            	shadow_acc_track_mask	= 0;
+        r = ops->hardware_setup();
+            vmx_hardware_setup
+                if (enable_ept)
+                    kvm_mmu_set_ept_masks
+                    	shadow_acc_track_mask = VMX_EPT_RWX_MASK;
+```
+
+如果我们想软件 access track 一个 page，那么我们需要想办法 intercept 它。
+
+上面 code 可以看到其可能取两个值：0 和 `VMX_EPT_RWX_MASK`。你可能会想，一个 mask 怎么可以是 0 呢，其实我们使用的时候是要取反的，所以 0 就表示全部。
+
+当 enable EPT 的时候，无论 EPT 有没有 A/D bits，都置为 RWX 的 mask，这是因为我们可以保证只有在没有 A/D bits 支持的时候这个变量才会用到。
+
+```c
+// access track 一个 SPTE
 u64 mark_spte_for_access_track(u64 spte)
 {
-    // 我们有 A/D bits 的硬件支持，所以我们清空 A bit 就好了。
-    // 硬件是自动进行 access track 的。
-	if (spte_ad_enabled(spte))
-		return spte & ~shadow_accessed_mask;
-
-    // 以及是不可读的了，直接返回就好。
-	if (is_access_track_spte(spte))
-		return spte;
-
     //...
-	spte |= (spte & SHADOW_ACC_TRACK_SAVED_BITS_MASK) << SHADOW_ACC_TRACK_SAVED_BITS_SHIFT;
-    // readable, writable, executable bit 都置为 0，这样就 enable track 了
+    // 只有没有 ad support 的时候才会调用到这里。
+    // 把 RWX 都置 0，这样就确保能够 intercept 它，从而实现 access track
 	spte &= ~shadow_acc_track_mask;
+}
 
-	return spte;
+// 取消 access track 从而能让一个页变的可读
+// 观察这个函数的调用链可以发现，只有当没有 ad bit support 的时候才会调用到这里。
+static inline u64 restore_acc_track_spte(u64 spte)
+{
+	spte &= ~shadow_acc_track_mask;
+    // 恢复之前的 RWX，因为 RWX 被我们清了做 access track 用了。
+	spte |= saved_bits;
 }
 ```
 
-# Masks/Bits In KVM for Access Tracking & Dirty Logging
+### `SHADOW_ACC_TRACK_SAVED_BITS_MASK` / `SHADOW_ACC_TRACK_SAVED_BITS_SHIFT` / `SPTE_EPT_READABLE_MASK` / `SPTE_EPT_EXECUTABLE_MASK` / KVM
+
+**这个变量表示我们要把 RWX 置为 0 从而 enable access tracking 时原先 RWX 值 save 的位置。**
+
+只有在 EPT 的并且没有 A/D bit 支持的情况下才有意义。
+
+```c
+/* The mask for the R/X bits in EPT PTEs */
+#define SPTE_EPT_READABLE_MASK			0x1ull
+#define SPTE_EPT_EXECUTABLE_MASK		0x4ull
+
+/*
+ * The mask/shift to use for saving the original R/X bits when marking the PTE
+ * as not-present for access tracking purposes. We do not save the W bit as the
+ * PTEs being access tracked also need to be dirty tracked, so the W bit will be
+ * restored only when a write is attempted to the page.  This mask obviously
+ * must not overlap the A/D type mask.
+ */
+#define SHADOW_ACC_TRACK_SAVED_BITS_MASK (SPTE_EPT_READABLE_MASK | SPTE_EPT_EXECUTABLE_MASK)
+#define SHADOW_ACC_TRACK_SAVED_BITS_SHIFT 54
+#define SHADOW_ACC_TRACK_SAVED_MASK	(SHADOW_ACC_TRACK_SAVED_BITS_MASK << SHADOW_ACC_TRACK_SAVED_BITS_SHIFT)
+```
+
+原来 EPT 里 SPTE 的 readable 和 executable 的 bit 是 bit 0 和 bit 2（`VMX_EPT_READABLE_MASK`, `VMX_EPT_EXECUTABLE_MASK`）。现在我们平移到了 54 + 0 和 54 + 2。为啥要这么做呢，这是因为这两个 bit 其实是 reserved 的，当我们想要 access track 一个 page 的时候，我们需要把 RWX 置为 0 这样 guest 访问它才能 page fault 从而 intercept 下来。为了保存置 0 之前的值，我们在 reserved bits 记录下来原来的 R/X 值，这样当 intercept 的时候，我们能够通过这些 bits 恢复其原来的 R/X 值。
+
+See function `mark_spte_for_access_track()` 和 `restore_acc_track_spte()` ，分别对应把 SPTE 置为 non-present 的时候以及 restore 这个 SPTE 的时候。
+
+EPT 可能没有 A/D bits 的支持，但是都有 RWX 的支持。
+
+```c
+static inline bool is_access_track_spte(u64 spte)
+{
+	return !spte_ad_enabled(spte) && (spte & shadow_acc_track_mask) == 0;
+}
+```
+
+可以看到如果它发现 `shadow_acc_track_mask` 其实也就是 `VMX_EPT_RWX_MASK` 是 0 的是否，也就是不可读，不可写，不可执行的时候，就相当于已经 access track 了。
