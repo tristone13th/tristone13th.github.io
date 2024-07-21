@@ -56,6 +56,10 @@ u64 mark_spte_for_access_track(u64 spte)
 
 ## Writable SPTE / MMU-writable SPTE / Host-writable SPTE / `shadow_host_writable_mask` / `shadow_mmu_writable_mask` / `PT_WRITABLE_MASK` KVM
 
+这个 commit 移除了一些 comments，也可以参考一下。
+
+[[PATCH 5/5] KVM: x86/mmu: Consolidate comments about {Host,MMU}-writable - David Matlack](https://lore.kernel.org/all/20220125230723.1701061-1-dmatlack@google.com/)
+
 ```c
 static inline void check_spte_writable_invariants(u64 spte)
 {
