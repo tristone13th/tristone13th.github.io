@@ -72,7 +72,7 @@ static inline void check_spte_writable_invariants(u64 spte)
 
 - 当一个 `spte & shadow_host_writable_mask` 时，那么它就是 host-writable 的，这个是软件定义的，用了 PTE 里面的 reserved bit。
 - 当一个 `spte & shadow_mmu_writable_mask` 时，那么它就是 MMU-writable 的，这个也是软件定义的，用了 PTE 里面的 reserved bit。这个表示这个 SPTE **应当是** MMU-writable 的。
-- 当一个 `spte & PT_WRITABLE_MASK` 时，那么它就是 Writable 的。这是硬件定义的，bit 1。当这个 bit 被置上时，表示**实际上**这个 SPTE 对应的页是 writable 的。
+- 当一个 `spte & PT_WRITABLE_MASK` 时，那么它就是 Writable 的。这是硬件定义的，bit 1。当这个 bit 被置上时，表示**实际上**这个 SPTE 对应的页是 writable 的。为什么是 `PT_WRITABLE_MASK` 而不是 `VMX_EPT_WRITABLE_MASK` 呢？我觉得可能是因为这两个本来就是一个 bit，没有必要把 EPT 和影子页表分的这么细，而且我们也有保证 `BUILD_BUG_ON(VMX_EPT_WRITABLE_MASK != PT_WRITABLE_MASK)` 保证这两个是同一个 bit。所以就先用着 `PT_WRITABLE_MASK` 吧。
 
 更多的解释请看这段注释：一个 SPTE 所映射的页不可写的可能有四个原因：
 
