@@ -5,22 +5,77 @@ title: Interrupt Virtualization & APICv
 
 # Interrupt Virtualization VMCS fields
 
-### `external-interrupt exiting` VMCS field
+并不是所有的都列在这里，比如 `Virtual-interrupt Delivery` 就列在和其更相关的章节。
+
+### `external-interrupt exiting` VMCS VM-execution control
 
 non-root 模式下接收到外部中断后，会产生 VM Exit。
 
-### `Acknowledge interrupt on exit` VMCS field
+```c
+// VM-exit 的 exit reason
+#define EXIT_REASON_EXTERNAL_INTERRUPT  1
 
-所以说 `external-interrupt exiting` 应该是一个前置的设置。
+#define VMX_FEATURE_INTR_EXITING	( 0*32+  0) /* "" VM-Exit on vectored interrupts */
+#define PIN_BASED_EXT_INTR_MASK                 VMCS_CONTROL_BIT(INTR_EXITING)
+```
+
+### `interrupt-window exiting` VMCS VM-execution control
+
+一言以蔽之，为了在 guest 开中断时更加方便地注入 queue 的 interrupts。
+
+[SIMPLE IS BETTER: "What, How, and Why" on Interrupt Window (or NMI Window) Exiting in Virtualization Technology](https://hypervsir.blogspot.com/2015/04/what-how-and-why-on-interrupt-window-or.html)
+
+**What**
+
+我们无法在 Guest 屏蔽中断的时候向其注入中断，所以我们需要先 queue 中断然后轮询 guest 直到其可以接受中断。有了这个 control，Guest 在变得可中断时会 exit 出来，从而避免了轮询。
+
+**Why**
+
+In a typical case, the VMM software wants to inject/deliver a (virtual) interrupt to its one of Guest VM at some point, but unfortunately the interruptibility state of its guest would NOT allow delivery of an interrupt at that moment (for example, since its guest `RFLAGS.IF` = 0).
+
+So, in order to deliver this interrupt, the VMM will need to **poll and check** the interruptibility state of the guest, once the interruptibility state of its guest allows delivery of an interrupt (**A window is open**), then VMM can deliver it at this moment. This is inefficient way to do so.
+
+**Use**
+
+With this feature, VMM is allowed to **queue** a virtual interrupt to its guest when the guest is NOT in an interruptible state. The VMM can just only set the “interrupt-window exiting” VM-execution control for that guest and depend on a VM exit to know when the guest becomes interruptible (and, therefore, when it can inject a virtual interrupt). The VMM can detect such VM exits by checking for the basic exit reason “interrupt-window”, if the value of exit reason is 7, then VMM knows it is right time to deliver a virtual interrupt to its specific guest.
+
+```c
+static int handle_interrupt_window(struct kvm_vcpu *vcpu)
+{
+	exec_controls_clearbit(to_vmx(vcpu), CPU_BASED_INTR_WINDOW_EXITING);
+
+    // 注入 queue 的中断。
+	kvm_make_request(KVM_REQ_EVENT, vcpu);
+
+	++vcpu->stat.irq_window_exits;
+	return 1;
+}
+
+vcpu_enter_guest
+    if (kvm_check_request(KVM_REQ_EVENT, vcpu) || req_int_win || kvm_xen_has_interrupt(vcpu))
+```
+
+### `Acknowledge interrupt on exit` VMCS VM-exit control
 
 This control affects **VM exits due to external interrupts** (see `external-interrupt exiting`), when that occurred:
 
-- If this control is 1, the logical processor acknowledges the interrupt controller, acquiring the interrupt’s vector. The vector is stored in the **VM-exit interruption-information** field, which is marked valid.
+- If this control is 1, the logical processor acknowledges the **interrupt controller**, acquiring the **interrupt’s vector**. The vector is stored in the **VM-exit interruption-information** field, which is marked valid.
 - If this control is 0, the interrupt is not acknowledged and the **VM-exit interruption-information** field is marked **invalid**.
+
+在这个 feature 之前，VMX Handler 需要 jump 到 IDT 里让真正的中断处理函数去处理。有了这个 feature 之后，只有不属于这个 vCPU 的中断才需要被 IDT table 来处理（比如目标是 host 而不是 VM 的中断？），属于这个 vCPU 的就直接在 VMX Handler 里处理了。这能大大减小 KVM 的 cost。
+
+从 KVM code 里可以看到，这个 bit 是必须置上的。
 
 ```c
 #define VM_EXIT_ACK_INTR_ON_EXIT                0x00008000
+#define __KVM_REQUIRED_VMX_VM_EXIT_CONTROLS				\
+	(VM_EXIT_SAVE_DEBUG_CONTROLS |					\
+	 VM_EXIT_ACK_INTR_ON_EXIT)
 ```
+
+所以说 `external-interrupt exiting` 应该是一个前置的设置。
+
+在 KVM 里 enable 的 patch，是下面 patchset 的第一个 patch：[[PATCH v10 0/7] KVM: VMX: Add Posted Interrupt supporting - Yang Zhang](https://lore.kernel.org/all/1365679516-13125-1-git-send-email-yang.z.zhang@intel.com/)
 
 # APICv Overview
 
@@ -46,13 +101,13 @@ VMCS has following **VM-execution controls**:
 
 APIC-access page 和 virtual-APIC page，这两个 page 的物理地址写在 VMCS 中，
 
-- 一个 guest 只有一个 APIC-access page，
+- 一个 VM 只有一个 APIC-access page，
 - 每个 vCPU 有一个 virtual-APIC page。
 
 EPT 把地址翻译指向 APIC-access page，但是当 vCPU 读写 LAPIC 的时候，会去 virtual APIC page 去拿数据，这样就能保证 vCPU 访问相同的物理地址拿到不同的结果，而且不需要 VMM 软件介入。可以得知：
 
 - APIC-access page 主要是用来判断这个 vCPU 的内存操作是不是想访问 APIC register
-- Virtual-APIC page 是真的存放这些 APIC register 数据的地方。当 hardware 发现想访问 APIC register 的时候，会把 access 导向这个 vCPU 的 Virtual-APIC page 的内容。
+- Virtual-APIC page 是真的存放这些 APIC register 数据的地方。**当 hardware 发现想访问 APIC register 的时候，会把 access 导向这个 vCPU 的 Virtual-APIC page 的内容。**
 
 比如虚拟 CPU 读自己的 LAPIC ID，那结果肯定不一样，EPT 翻译到相同的地址，如果没重定向到 virtual-APIC page 那么结果就一样了。
 
@@ -191,7 +246,12 @@ IF “virtual-interrupt delivery” is 0:
 
 首先来回顾一下，non-root 模式下对外部中断（指除 NMI、SMI、INIT 和 Start-IPI 外的所有中断）的处理：
 
-当 `external-interrupt exiting` = 1 时，non-root 模式下接收到外部中断后，会产生 VM Exit（VM Exit No.1 External Interrupt），将中断交给 host 处理。开启 virtual-interrupt delivery 的前提就是开启 external-interrupt exiting（If the “virtual-interrupt delivery” VM-execution control is 1, the “external-interrupt exiting” VM-execution control must be 1.）。根据 `Acknowledge Interrupt on Exit` 的取值，Host 对中断有不同的处理：
+首先有下面三个 VMCS field：
+
+- `external-interrupt exiting`，是一个 VM-execution control field。当 = 1 时，non-root 模式下接收到外部中断后，会产生 VM Exit（VM Exit No.1 External Interrupt），将中断交给 host 处理。
+- 开启 `virtual-interrupt delivery` 的前提就是开启这个 `external-interrupt exiting`（参考：If the “virtual-interrupt delivery” VM-execution control is 1, the “external-interrupt exiting” VM-execution control must be 1.）。
+
+根据 `Acknowledge Interrupt on Exit` 的取值，Host 对中断有不同的处理：
 
 - 若 Acknowledge Interrupt on Exit = 0，则 VM Exit 后该中断还在物理 interrupt controller (PIC/APIC) 的 IRR 中 pending，host 应该开中断（即取消中断屏蔽）以调用其 IDT 中注册的中断处理例程。
 - 否则，VM Exit 时会进行中断确认，但不会进行 EOI，中断的向量号会存储在 VM-Exit Interruption Information（`VMCS[0x4404](32 bit)`）中，host 应该读取该向量号然后作出相应的处理。
