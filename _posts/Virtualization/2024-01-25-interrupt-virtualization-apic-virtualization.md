@@ -195,8 +195,8 @@ deliver interrupt with Vector through IDT
 
 16 bits. This field is supported only on processors that support the 1-setting of the “**virtual-interrupt delivery**” VM-execution control. It characterizes part of the guest’s virtual-APIC state. It comprises two 8-bit subfields（8bit 的原因可能是因为正好 $2^8=256$？毕竟我们有 256 个 vectors）:
 
-- **Requesting virtual interrupt** (RVI): The processor treats this value as the vector of the **highest priority** virtual interrupt that is **requesting service**（有点像 IRR）；
-- **Servicing virtual interrupt** (SVI). The processor treats this value as the vector of the **highest priority** virtual interrupt that is **in service**. (有点像 ISR)。
+- **Requesting virtual interrupt** (RVI): The processor treats this value as the vector of the **highest priority** virtual interrupt that is **requesting service**（有点像 IRR，区别在于这是一个 value 而不是一个 array）；
+- **Servicing virtual interrupt** (SVI). The processor treats this value as the vector of the **highest priority** virtual interrupt that is **in service**. (有点像 ISR，区别在于这是一个 value 而不是一个 array)。
 
 ### 我们已经有 VIRR 和 VISR 了，为什么还需要 RVI 和 SVI 这两个 fields？
 
