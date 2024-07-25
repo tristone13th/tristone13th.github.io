@@ -3,6 +3,10 @@ categories: Virtualization
 title: Interrupt Virtualization & APICv
 ---
 
+### VIRR 和 VISR 在什么地方？
+
+IRR 和 ISR 是 APIC 的 registers，所以 VIRR 和 VISR 都在 Virtual-APIC Page^ 里面。
+
 # Interrupt Virtualization VMCS fields
 
 并不是所有的都列在这里，比如 `Virtual-interrupt Delivery` 就列在和其更相关的章节。
@@ -123,7 +127,7 @@ Certain VM-execution controls enable virtualize certain accesses to the APIC-acc
 
 ## Virtual-APIC Page / `Virtual-APIC Address` VMCS field
 
-因为 APIC 在 bare-metal 上就是一个 page 包含了几乎所有的寄存器（除了几个 MSR？），所以对于其的虚拟化也搞到了一个 page 里面。
+因为 APIC 在 bare-metal 上就是一个 4K（APIC registers are **memory-mapped** to a 4-KByte region of the processor’s physical address space with an initial starting address of FEE00000H） 的空间包含了几乎所有的寄存器（除了几个 MSR？），所以对于其的虚拟化也搞到了一个 page 里面。
 
 为了让 Guest 对其（虚拟）APIC 的访问不必引起 VM Exit，引入了 Virtual-APIC Page 的概念。它相当于是一个 Shadow APIC，Guest 对其 APIC 的**部分甚至全部访问**都可以被**硬件**翻译成对 Virtual-APIC Page 的访问，这样就不必频繁引起 VM Exit 了。我们可以通过 VMCS 中的 **Virtual-APIC Address** field 指定 Virtual-APIC Page 的物理地址。
 
@@ -137,6 +141,21 @@ Depending on the settings of **certain VM-execution controls**, the processor ma
 - Virtual interrupt-service register (VISR): 对应 ISR
 - Virtual interrupt-request register (VIRR): 对应 IRR
 - Virtual interrupt-command register (VICR_LO) / Virtual interrupt-command register (VICR_HI): 对应 ICR。
+
+```c
+struct kvm_lapic {
+	/**
+	 * APIC register page.  The layout matches the register layout seen by
+	 * the guest 1:1, because it is accessed by the vmx microcode.
+	 * Note: Only one register, the TPR, is used by the microcode.
+	 */
+	void *regs;
+    //...
+};
+
+init_vmcs
+    vmcs_write64(VIRTUAL_APIC_PAGE_ADDR, __pa(vmx->vcpu.arch.apic->regs));
+```
 
 ## `virtualize APIC accesses` VMCS field
 
