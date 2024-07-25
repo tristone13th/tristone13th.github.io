@@ -212,6 +212,10 @@ deliver interrupt with Vector through IDT
 
 ### `Guest Interrupt Status` / RVI / SVI
 
+TODO: 这两个都可以通过 vIRR 和 vISR 来算出来，VM entry 的时候也会自动被硬件置上（`GUEST_INTR_STATUS` will be updated in VMEntry.），那么设置这两个可写的 VMCS fields 的意义是什么？
+
+It does not correspond to any processor or APIC registers. 既然 bare-metal 的 APIC 没有这个 field，那么设计这两个 field 的意义在哪里？
+
 16 bits. This field is supported only on processors that support the 1-setting of the “**virtual-interrupt delivery**” VM-execution control. It characterizes part of the guest’s virtual-APIC state. It comprises two 8-bit subfields（8bit 的原因可能是因为正好 $2^8=256$？毕竟我们有 256 个 vectors）:
 
 - **Requesting virtual interrupt** (RVI): The processor treats this value as the vector of the **highest priority** virtual interrupt that is **requesting service**（有点像 IRR，区别在于这是一个 value 而不是一个 array）；
@@ -388,6 +392,110 @@ __apic_accept_irq
 ```
 
 之所以这么设计，而不是直接把 `pi_desc` get 出来，我觉得是是因为 LAPIC states 是一些 registers 的信息。 而 pi_desc 是一片 VMCS field 指向的内存，和 LAPIC 关系不大，所以不应该拿出来。
+
+### Migration 对于 post-interrupt 的处理 / `vmx_sync_pir_to_irr()`
+
+一言以蔽之，现在 VMX 并没有迁移 Posted-interrupt，它只是把 PIR sync 到 IRR 然后迁移 IRR。
+
+```c
+// KVM 这里把 PIR sync 到了 VIRR 中。
+// 注意对于 TD 我们并不会这么做，我们期望未来 TDX Module 来 support this？
+qemu_savevm_state_complete_precopy
+    cpu_synchronize_all_states
+        CPU_FOREACH(cpu) {
+            cpu_synchronize_state
+                kvm_cpu_synchronize_state
+                    do_kvm_cpu_synchronize_state
+                        kvm_arch_get_registers
+                            kvm_get_apic
+                                // ----- qemu call to kvm
+                                case KVM_GET_LAPIC: {
+                                    kvm_vcpu_ioctl_get_lapic
+                                        vt_sync_pir_to_irr
+                                        	if (is_td_vcpu(vcpu))
+                                        		return -1;
+                                            vmx_sync_pir_to_irr
+
+static const VMStateDescription vmstate_apic_common = {
+    .name = "apic",
+    .post_load = apic_dispatch_post_load,
+    //...
+};
+vmstate_load_state
+    vmsd->post_load(opaque, version_id);
+        apic_dispatch_post_load
+            kvm_apic_post_load
+                // 我们现在是 qemu main thread 在 load，需要通知到 vCPU 线程来完成 apic 状态的设置
+                run_on_cpu(CPU(s->cpu), kvm_apic_put, RUN_ON_CPU_HOST_PTR(s));
+                    // from QEMU to KVM, vcpu ioctl
+                    case KVM_SET_LAPIC: {
+                        kvm_vcpu_ioctl_set_lapic
+                            kvm_apic_set_state
+                                // vIRR 在这里已经被置上了。
+                                memcpy(vcpu->arch.apic->regs, s->regs, sizeof(*s));
+                                static_call_cond(kvm_x86_apicv_post_state_restore)(vcpu);
+                                    vmx_apicv_post_state_restore
+                                        // 将 dst 的 PIR 置 0，因为 source
+                                        // 已经把所有的 PIR bits 都放在 IRR 里了。
+                                        pi_clear_on(&vmx->pi_desc);
+                                    	memset(vmx->pi_desc.pir, 0, sizeof(vmx->pi_desc.pir));
+                                static_call_cond(kvm_x86_hwapic_irr_update)
+                                    vmx_hwapic_irr_update
+                                        // Set RVI.
+                                        // 你可能会问，vIRR 是在哪里设置上的？
+                                        // 没有显式的置上，因为 live migration 过来 lapic->regs 就已经
+                                        // 是这个值了，同时 lapic->regs 就表示了 virtual register 的值，
+                                        // 所以不需要再向硬件设置一次。RVI 并没有映射在 virtual apic page
+                                        // 里面，所以需要手动设置。
+                                        vmx_set_rvi(max_irr);
+```
+
+```c
+int vmx_sync_pir_to_irr(struct kvm_vcpu *vcpu)
+{
+	struct vcpu_vmx *vmx = to_vmx(vcpu);
+	int max_irr;
+	bool got_posted_interrupt;
+
+    //...
+    // 如果 ON 被 set 了，表示 PIR 里肯定有东西
+	if (pi_test_on(&vmx->pi_desc)) {
+		pi_clear_on(&vmx->pi_desc);
+		/*
+		 * IOMMU can write to PID.ON, so the barrier matters even on UP.
+		 * But on x86 this is just a compiler barrier anyway.
+		 */
+		smp_mb__after_atomic();
+        // 把 PIR 的 bits sync 到 IRR 里面
+		got_posted_interrupt = kvm_apic_update_irr(vcpu, vmx->pi_desc.pir, &max_irr);
+	} else {
+		max_irr = kvm_lapic_find_highest_irr(vcpu);
+		got_posted_interrupt = false;
+	}
+
+	/*
+	 * Newly recognized interrupts are injected via either virtual interrupt
+	 * delivery (RVI) or KVM_REQ_EVENT.  Virtual interrupt delivery is
+	 * disabled in two cases:
+	 *
+	 * 1) If L2 is running and the vCPU has a new pending interrupt.  If L1
+	 * wants to exit on interrupts, KVM_REQ_EVENT is needed to synthesize a
+	 * VM-Exit to L1.  If L1 doesn't want to exit, the interrupt is injected
+	 * into L2, but KVM doesn't use virtual interrupt delivery to inject
+	 * interrupts into L2, and so KVM_REQ_EVENT is again needed.
+	 *
+	 * 2) If APICv is disabled for this vCPU, assigned devices may still
+	 * attempt to post interrupts.  The posted interrupt vector will cause
+	 * a VM-Exit and the subsequent entry will call sync_pir_to_irr.
+	 */
+	if (!is_guest_mode(vcpu) && kvm_vcpu_apicv_active(vcpu))
+		vmx_set_rvi(max_irr);
+	else if (got_posted_interrupt)
+		kvm_make_request(KVM_REQ_EVENT, vcpu);
+
+	return max_irr;
+}
+```
 
 # VT-d Post Interrupt
 
