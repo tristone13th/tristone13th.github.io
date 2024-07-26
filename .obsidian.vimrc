@@ -24,6 +24,7 @@ noremap gj G
 noremap <Up> <C-u>
 noremap <Down> <C-d>
 set clipboard=unnamed
+unmap <C-c>
  
 " insert mode
 imap jk <Esc>
