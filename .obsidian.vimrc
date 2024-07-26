@@ -24,6 +24,7 @@ noremap gj G
 noremap <Up> <C-u>
 noremap <Down> <C-d>
 set clipboard=unnamed
+" https://github.com/esm7/obsidian-vimrc-support/issues/156
 unmap <C-c>
  
 " insert mode
