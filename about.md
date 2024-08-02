@@ -5,10 +5,6 @@ title: About
 permalink: /about/
 ---
 
-Welcome to this website!
-
-> This website is created by [Jekyll](http://jekyllcn.com/) using the Jekyll theme [EasyBook](https://github.com/laobubu/jekyll-theme-EasyBook) with the domain name provided by [Github Pages](https://pages.github.com/), **thanks for their support!**
-
 欢迎来到「Leinux 博客」！
 
 我是王磊，aka. tristone13th，我的兴趣比较广泛，喜欢折腾各种东西，对 PKM (Personal Knowledge Management) & Workflow 的东西尤其感兴趣。我于 2019 年本科毕业于西安电子科技大学软件工程系，2022 年硕士毕业于复旦大学计算机系，目前任职于 Intel。
