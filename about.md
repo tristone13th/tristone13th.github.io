@@ -33,7 +33,7 @@ Welcome to this website!
 
 我开博客的目的不仅仅在于分享，更多的是作为我 PKM 的一部分。因此博客的内容可能会有一些碎片化（希望谅解），我所能保证的是每一篇博客绝对不会是写完就万事大吉，一篇博客的诞生只是开始，后面会持续更新（这也是卡片式笔记法的精髓），更新频率取决于我最近在学习的 footprint。所以如果你发现一篇博客写的有点云里雾里，不妨过段时间再来看看（如果你还碰巧记得的话），说不定会有意外收获。
 
-这是我的 Github 账号：[tristone13th (Leinux)](https://github.com/tristone13th)，希望不吝赐 Follow~
+我的联系方式是 tristone13th@outlook.com，欢迎添加友链；我的 Github 账号是 [tristone13th (Leinux)](https://github.com/tristone13th)，希望不吝赐 Follow~
 
 # Disclaimer
 
