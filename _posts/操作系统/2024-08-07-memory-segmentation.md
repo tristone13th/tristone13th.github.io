@@ -59,3 +59,7 @@ Each task can see the memory blocks whose descriptors are, either referenced in 
 因为段在 64bit 已经不能用了，所以其实是通过分页来使用页里的 permission 来保证的。
 
 [c - How is text segment made read-only? - Stack Overflow](https://stackoverflow.com/questions/59870800/how-is-text-segment-made-read-only)
+
+### 为什么代码段（.text）应该是只读的？
+
+主要还是安全上的考虑，防止那种恶意程序更改一个程序的代码文本，减小攻击面。而且也可以防止代码偶然的被修改。
