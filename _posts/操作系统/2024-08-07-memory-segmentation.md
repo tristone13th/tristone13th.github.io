@@ -63,3 +63,9 @@ Each task can see the memory blocks whose descriptors are, either referenced in 
 ### 为什么代码段（.text）应该是只读的？
 
 主要还是安全上的考虑，防止那种恶意程序更改一个程序的代码文本，减小攻击面。而且也可以防止代码偶然的被修改。
+
+### 自修改代码（SMC）是如何实现的？
+
+代码段是只读的，那么应用程序如何实现自修改代码？
+
+可以学习一下这个 repo，里面给了一个 SMC 的代码例子：[Squalr/Self-Modifying-Code: C++ Self Modifying Code (Self Assembing/Disassembling)](https://github.com/Squalr/Self-Modifying-Code)
