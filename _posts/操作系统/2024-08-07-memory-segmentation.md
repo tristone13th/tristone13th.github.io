@@ -64,6 +64,8 @@ Each task can see the memory blocks whose descriptors are, either referenced in 
 
 主要还是安全上的考虑，防止那种恶意程序更改一个程序的代码文本，减小攻击面。而且也可以防止代码偶然的被修改。
 
+如果我们想改，还是可以改代码段的属性的，比如 Windows 系统就提供 API `VirtualProtect` 来把某一个代码所在的页改成 writable 的，从而实现对于代码段的更改。
+
 ### 自修改代码（SMC）是如何实现的？
 
 代码段是只读的，那么应用程序如何实现自修改代码？
