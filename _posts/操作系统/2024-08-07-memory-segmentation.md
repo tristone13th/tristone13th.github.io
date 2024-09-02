@@ -71,3 +71,8 @@ Each task can see the memory blocks whose descriptors are, either referenced in 
 代码段是只读的，那么应用程序如何实现自修改代码？
 
 可以学习一下这个 repo，里面给了一个 SMC 的代码例子：[Squalr/Self-Modifying-Code: C++ Self Modifying Code (Self Assembing/Disassembling)](https://github.com/Squalr/Self-Modifying-Code)
+
+### Life after the abandon of segmentation mechanism in x86
+
+之前我们都知道，进程分为堆栈段、数据段等等，在段机制在硬件上被取消之后，进程的地址空间布局有什么变化吗？
+
