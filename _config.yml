@@ -35,6 +35,7 @@ plugins:
  - jemoji
  - jekyll-spaceship
  - jekyll-sitemap
+ - jekyll-seo-tag
 
 # Build settings
 paginate: 5
